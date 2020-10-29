@@ -1,118 +1,86 @@
 import React, { Fragment, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faPhoneAlt,
-  faMobileAlt,
-  faStar
-} from '@fortawesome/free-solid-svg-icons';
+import { useParams } from 'react-router-dom';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import * as employeeActions from 'actions/employee';
+import { useTranslation } from 'react-i18next';
+import { Device } from 'components';
 import styled from 'styled-components';
 
-const SearchResultStyled = styled.div`
-  padding-top: 100px;
+import Header from "containers/Header";
+import PeopleItem from './PeopleItem';
+
+const PeopleFinderStyled = styled.div`
+  padding-top: 120px;
 `;
 
-const ListItemStyled = styled.li`
-  display: flex;
-  align-items: center;
-  padding: 15px 30px;
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
+const ListItemStyled = styled.div`
+  border-bottom: 1px solid #e0e0e0;
   transition: background 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
 
   &:hover {
     background-color: #efefef;
   }
 
-  .column {
-    margin-left: 1rem;
-    text-align: left;
+  @media ${Device.mobile} {
+    padding: 0 10px;
+  }
 
-    &.names {
-      margin-right: auto;
-    }
-
-    &.favorite {
-      color: #ddd;
-    }
-
-    svg {
-      width: 20px;
-    }
+  @media ${Device.tablet} {
+    padding: 0 20px;
   }
 `;
 
-const ProfileImageStyled = styled.figure`
-  margin-left: 0 !important;
-
-  img {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-  }
+const NotFoundItemsStyled = styled.div`
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-weight: bold;
+  text-align: center;
+  line-height: 65px;
+  color: #848484;
+  font-style: italic;
 `;
 
-const employeeMap = [
-  {
-    id: 0,
-    image: 'https://lh3.googleusercontent.com/a-/AAuE7mATJTm29AtV9kMG2nJkphih5EaQuhxG93JFs_fi',
-    name: '오두용',
-    team: '연구기획팀',
-    officeTel: '070-7011-1965',
-    mobile: '010-3396-8301',
-    status: '교육(종일)'
-  }
-]
-
-const PeopleFinder = (props) => {
-  console.log(props);
+const PeopleFinder = ({
+  employees,
+  employeeActions,
+}) => {
+  const { t } = useTranslation();
+  const { keyword } = useParams();
 
   useEffect(() => {
-    
-  }, []);
+    if (keyword) {
+      employeeActions.fetchEmployeeAsync(decodeURIComponent(keyword));
+    }
+  }, [employeeActions, keyword]);
 
   return (
     <Fragment>
-      <SearchResultStyled>
-        <ul>
+      <Header />
+
+      {keyword && employees &&
+        <PeopleFinderStyled>
           {
-            employeeMap.map(employee => {
-              return (
-                <ListItemStyled key={employee.id}>
-                  <ProfileImageStyled className="column">
-                    <img src={employee.image} alt="" />
-                  </ProfileImageStyled>
-
-                  <div className="column names">
-                    <div className="name">{employee.name}</div>
-                    <div className="division">{employee.team}</div>
-                  </div>
-
-                  <div className="column phones">
-                    <div className="office">
-                      <FontAwesomeIcon icon={faPhoneAlt} />
-                      {employee.officeTel}
-                    </div>
-                    <div className="mobile">
-                      <FontAwesomeIcon icon={faMobileAlt} />
-                      {employee.mobile}
-                    </div>
-                  </div>
-
-                  <div className="column absent-status">
-                    {employee.status}
-                  </div>
-
-                  <div className="column favorite">
-                    <FontAwesomeIcon icon={faStar} size="lg" />
-                  </div>
+            employees.length > 0
+              ? employees.map((item, idx) =>
+                <ListItemStyled key={idx}>
+                  <PeopleItem {...item} />
                 </ListItemStyled>
               )
-            })
+              : <NotFoundItemsStyled>{t('no_search_data')}</NotFoundItemsStyled>
           }
-        </ul>
-      </SearchResultStyled>
+        </PeopleFinderStyled>
+      }
     </Fragment>
   );
 }
 
-export default PeopleFinder;
+const mapState = state => ({
+  employees: state.employee.employees,
+});
+
+const mapDispatch = dispatch => ({
+  employeeActions: bindActionCreators(employeeActions, dispatch),
+});
+
+export default connect(mapState, mapDispatch)(PeopleFinder);
